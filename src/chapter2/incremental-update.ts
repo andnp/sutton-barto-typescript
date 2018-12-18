@@ -4,6 +4,7 @@ import { random } from 'mlts';
 import { Matrix } from 'utilities-ts';
 import { describeColumns, LineChart, Remote, createStandardPalette, combineTraces } from 'tsplot';
 import '@tensorflow/tfjs-node';
+import { updateAtIndex } from '../utils/tfjs';
 
 class KArmedBandit {
     private q_star: tf.Tensor1D;
@@ -20,52 +21,37 @@ class KArmedBandit {
     }
 }
 
-const argMax = (arr: number[]): number => {
-    let m = Number.NEGATIVE_INFINITY;
-    let locs = [] as number[];
-    for (let i = 0; i < arr.length; ++i) {
-        if (arr[i] === m) {
-            locs.push(i);
-        } else if (arr[i] > m) {
-            locs = [i];
-            m = arr[i];
-        }
-    }
-
-    if (locs.length < 2) return locs[0];
-    const rnd = random.randomInteger(0, locs.length - 1);
-    return locs[rnd];
-};
-
 class SampleAverageAgent {
-    private q: number[];
-    private steps: number[];
+    private q: tf.Tensor1D;
+    private steps: tf.Tensor1D;
 
     constructor(private k: number, private epsilon: number) {
         if (epsilon < 0 || epsilon > 1) throw new Error('Expected epsilon to be between 0 and 1');
 
-        this.q = _.times(this.k, () => 0);
-        this.steps = _.times(this.k, () => 0);
+        this.q = tf.zeros([this.k]);
+        this.steps = tf.zeros([this.k]);
     }
 
     getAction(): number {
-        const rnd = tf.randomUniform([1], 0, 1).get(0);
-        if (rnd <= this.epsilon) return random.randomInteger(0, this.k - 1);
+        return tf.tidy(() => {
+            const rnd = tf.randomUniform([1], 0, 1).get(0);
+            if (rnd <= this.epsilon) return random.randomInteger(0, this.k - 1);
 
-        const max = argMax(this.q);
-        return max;
+            const max = this.q.argMax().get();
+            return max;
+        });
     }
 
     updateValueEstimates(a: number, r: number) {
         if (a > this.k || a < 0) throw new Error('Attempted to update action estimate outside of range');
 
-        this.steps[a] += 1;
-        this.q[a] = this.q[a] + (1 / this.steps[a]) * (r - this.q[a]);
+        this.steps = updateAtIndex(this.steps, a, this.steps.get(a) + 1);
+        this.q = updateAtIndex(this.q, a, this.q.get(a) + (1 / this.steps.get(a)) * (r - this.q.get(a)));
     }
 
     reset() {
-        this.q = _.times(this.k, () => 0);
-        this.steps = _.times(this.k, () => 0);
+        this.q = tf.zeros([this.k]);
+        this.steps = tf.zeros([this.k]);
     }
 }
 
@@ -83,7 +69,7 @@ function evaluate(agent: SampleAverageAgent, env: KArmedBandit, steps: number) {
 
 async function run() {
     const steps = 1000;
-    const runs = 200;
+    const runs = 50;
     const k = 10;
 
     const palette = createStandardPalette(3);
