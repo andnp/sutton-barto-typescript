@@ -1,11 +1,10 @@
-import * as tf from '@tensorflow/tfjs';
 import * as _ from 'lodash';
 import { random } from 'mlts';
 import { Matrix } from 'utilities-ts';
 import { describeColumns, LineChart, Remote, createStandardPalette, combineTraces } from 'tsplot';
-import '@tensorflow/tfjs-node';
 
-const randomNormal = (mean: number, std: number) => tf.tidy(() => tf.randomNormal([1], mean, std).get(0));
+import { argMax } from '../utils/numerical';
+import { randomNormal, randomUniform } from '../utils/statistical';
 
 class KArmedBandit {
     private q_star: number[];
@@ -25,23 +24,6 @@ class KArmedBandit {
     }
 }
 
-const argMax = (arr: number[]): number => {
-    let m = Number.NEGATIVE_INFINITY;
-    let locs = [] as number[];
-    for (let i = 0; i < arr.length; ++i) {
-        if (arr[i] === m) {
-            locs.push(i);
-        } else if (arr[i] > m) {
-            locs = [i];
-            m = arr[i];
-        }
-    }
-
-    if (locs.length < 2) return locs[0];
-    const rnd = random.randomInteger(0, locs.length - 1);
-    return locs[rnd];
-};
-
 class SampleAverageAgent {
     private q: number[];
 
@@ -52,7 +34,7 @@ class SampleAverageAgent {
     }
 
     getAction(): number {
-        const rnd = tf.randomUniform([1], 0, 1).get(0);
+        const rnd = randomUniform(0, 1);
         if (rnd <= this.epsilon) return random.randomInteger(0, this.k - 1);
 
         const max = argMax(this.q);
@@ -100,7 +82,7 @@ async function run() {
             console.log(run);
             const env = new KArmedBandit(k);
 
-            return tf.tidy(() => evaluate(agent, env, steps));
+            return evaluate(agent, env, steps);
         });
 
         const rewardMatrix = Matrix.fromData(rewards);
