@@ -3,7 +3,7 @@ import { Matrix } from 'utilities-ts';
 import { describeColumns, LineChart, Remote, createStandardPalette, combineTraces } from 'tsplot';
 
 import { argMax } from '../utils/numerical';
-import { randomNormal } from '../utils/statistical';
+import { randomNormal, softmax } from '../utils/statistical';
 
 
 class KArmedBandit {
@@ -19,11 +19,6 @@ class KArmedBandit {
         const reward = randomNormal(value, 1);
         return reward;
     }
-}
-
-function softmax(arr: number[], a: number) {
-    const sum = _.sum(arr.map(v => Math.exp(v)));
-    return Math.exp(arr[a]) / sum;
 }
 
 interface AgentSettings {
