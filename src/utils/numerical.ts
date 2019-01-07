@@ -1,6 +1,10 @@
 import { random } from "mlts";
 
-export const argMax = (arr: number[]): number => {
+interface ArgMaxOptions {
+    breakTieRandomly?: boolean;
+}
+
+export const argMax = (arr: number[], opts?: ArgMaxOptions): number => {
     let m = Number.NEGATIVE_INFINITY;
     let locs = [] as number[];
     for (let i = 0; i < arr.length; ++i) {
@@ -12,7 +16,8 @@ export const argMax = (arr: number[]): number => {
         }
     }
 
-    if (locs.length < 2) return locs[0];
+    const breakTieRandomly = !opts || (opts && opts.breakTieRandomly);
+    if (locs.length < 2 || !breakTieRandomly) return locs[0];
     const rnd = random.randomInteger(0, locs.length - 1);
     return locs[rnd];
 };
