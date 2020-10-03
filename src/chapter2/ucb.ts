@@ -107,7 +107,7 @@ async function run() {
         return learningCurve;
     });
 
-    await Remote.plot(combineTraces(plots, ''));
+    await Remote.plot(combineTraces(plots));
 }
 
 run()

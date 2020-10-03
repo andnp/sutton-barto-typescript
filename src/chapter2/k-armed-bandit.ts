@@ -2,7 +2,7 @@ import * as tf from '@tensorflow/tfjs';
 import * as _ from 'lodash';
 import { random } from 'mlts';
 import { Matrix } from 'utilities-ts';
-import { describeColumns, LineChart, Remote, createStandardPalette, combineTraces } from 'tsplot';
+import { describeColumns, LineChart, Remote, createStandardPalette, combineTraces, createDarkPalette } from 'tsplot';
 import '@tensorflow/tfjs-node';
 
 class KArmedBandit {
@@ -85,10 +85,10 @@ function evaluate(agent: SampleAverageAgent, env: KArmedBandit, steps: number) {
 
 async function run() {
     const steps = 1000;
-    const runs = 2000;
+    const runs = 100;
     const k = 10;
 
-    const palette = createStandardPalette(3);
+    const palette = createDarkPalette(3);
 
     const agents = [
         new SampleAverageAgent(k, 0),
@@ -113,7 +113,7 @@ async function run() {
         return learningCurve;
     });
 
-    await Remote.plot(combineTraces(plots, ''));
+    await Remote.plot(combineTraces(plots));
 }
 
 run()

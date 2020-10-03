@@ -1,7 +1,7 @@
 import * as tf from '@tensorflow/tfjs';
 import * as _ from 'lodash';
 import { random } from 'mlts';
-import { Matrix } from 'utilities-ts';
+import { Matrix, files } from 'utilities-ts';
 import { describeColumns, LineChart, Remote, createStandardPalette, combineTraces } from 'tsplot';
 import '@tensorflow/tfjs-node';
 import { updateAtIndex } from '../utils/tfjs';
@@ -69,15 +69,17 @@ function evaluate(agent: SampleAverageAgent, env: KArmedBandit, steps: number) {
 
 async function run() {
     const steps = 1000;
-    const runs = 50;
+    const runs = 2000;
     const k = 10;
 
     const palette = createStandardPalette(3);
 
     const agents = [
-        new SampleAverageAgent(k, 0),
-        new SampleAverageAgent(k, 0.01),
+        // new SampleAverageAgent(k, 0),
+        // new SampleAverageAgent(k, 0.01),
         new SampleAverageAgent(k, 0.1),
+        // new SampleAverageAgent(k, 0.1),
+        // new SampleAverageAgent(k, 0.1),
     ];
 
     const plots = agents.map((agent) => {
@@ -90,14 +92,28 @@ async function run() {
 
         const rewardMatrix = Matrix.fromData(rewards);
         const stats = describeColumns(rewardMatrix);
+        const mean = stats.map(s => s.mean);
 
-        const learningCurve = LineChart.fromArrayStats(stats);
+        // const learningCurve = LineChart.fromArrayStats(stats);
+        const learningCurve = LineChart.fromArray(mean);
         learningCurve.setColor(palette.next());
 
         return learningCurve;
     });
 
-    await Remote.plot(combineTraces(plots, ''));
+    const combined = [] as LineChart[];
+    for (let i = 0; i < plots.length; ++i) {
+        const plot = plots[i];
+        combined.push(plot);
+        plot.smooth(false);
+        plot.layout.yaxis = { range: [-1.1, 3.1] };
+        const svg = await Remote.plot(combineTraces(combined));
+        // await files.writeFile(`plot-${i}.svg`, svg);
+        await files.writeFile('avg-2000.svg', svg);
+    }
+
+    // const svg = await Remote.plot(combineTraces(plots));
+    // await files.writeFile('avg-20.svg', svg);
 }
 
 run()
